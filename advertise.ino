@@ -16,7 +16,7 @@ void setup() {
   BLE.setLocalName("MyBLEBeacon");
 
   // Advertise "Hello" in manufacturer data
-  byte message[] = { 'H', 'e', 'l', 'l', 'o' };
+  byte message[] = {  ' ', ' ','H','e', 'l', 'l', 'o' };
   BLE.setManufacturerData(message, sizeof(message));
 
   // Start advertising
