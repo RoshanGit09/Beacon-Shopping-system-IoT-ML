@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #f0f0f0, #d6d6d6, #333);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            text-align: center;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            text-align: center;
+            appearance: none; /* Makes the dropdown uniform with input fields */
+            background-color: white;
+        }
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 90%;
+            margin: 10px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 25px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 25px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4caf50;
+        }
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        button {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 90%;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #555;
+        }
+        .success {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #28a745;
+        }
+        .success i {
+            font-size: 30px;
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Supermarket Customer Form</h2>
+        <form id="customerForm">
+            <div class="input-container">
+                <input type="text" name="name" placeholder="Full Name" required>
+                <input type="number" name="age" placeholder="Age" required>
+                <select name="gender">
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+                <input type="text" name="favorite_foods" placeholder="Favorite Foods (comma-separated)">
+                
+                <div class="toggle-container">
+                    <label>Married:</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="married">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <input type="number" name="children" placeholder="Number of Children">
+                <input type="text" name="allergic_foods" placeholder="Allergic Foods (comma-separated)">
+                <input type="text" name="medical_conditions" placeholder="Medical Conditions (comma-separated)">
+                <button type="submit">Submit</button>
+            </div>
+        </form>
+        <div class="success" id="successMessage">
+            <i>✔️</i>
+            <p>Thanks for submitting, enjoy your shopping with us!</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("customerForm").onsubmit = async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            data["married"] = formData.has("married");
+            data["favorite_foods"] = data["favorite_foods"] ? data["favorite_foods"].split(",") : [];
+            data["allergic_foods"] = data["allergic_foods"] ? data["allergic_foods"].split(",") : [];
+            data["medical_conditions"] = data["medical_conditions"] ? data["medical_conditions"].split(",") : [];
+
+            const response = await fetch("/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                document.getElementById("customerForm").reset();
+                document.getElementById("successMessage").style.display = "block";
+            }
+        };
+    </script>
+</body>
+</html>
