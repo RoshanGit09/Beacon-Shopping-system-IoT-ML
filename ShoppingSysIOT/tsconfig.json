@@ -10,8 +10,10 @@
   },
   "include": [
     "**/*.ts",
+    "**/*.js",
     "**/*.tsx",
+    "**/*.jsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "app/(tabs)/RegisterScreen.jsx"  ]
+, "app/(register)/RegisterScreen.jsx"  ]
 }

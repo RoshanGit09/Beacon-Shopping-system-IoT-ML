@@ -1,29 +1,37 @@
-import { Image, StyleSheet, Platform, TextInput, FlatList, KeyboardAvoidingView, ScrollView, ActivityIndicator } from 'react-native';
-import { useState } from 'react';
+import { Image, StyleSheet, Platform, TextInput, FlatList, KeyboardAvoidingView, ScrollView, ActivityIndicator, TouchableOpacity, Keyboard } from 'react-native';
+import { useState, useEffect } from 'react';
 import Markdown from 'react-native-markdown-display';
 import { HelloWave } from '@/components/HelloWave';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useLocalSearchParams  } from 'expo-router';
 
 // Replace with your actual backend URL
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = 'http://192.168.116.123:5000';
 
-export default function TabTwoScreen() {
+import { useNavigation ,useRoute } from '@react-navigation/native';
+
+export default function ChatBot() {
+  const navigation = useNavigation();
+  const route = useRoute(); 
+  const { emailid } = route.params || {};
+  
   const [messages, setMessages] = useState([
     { 
       id: '1', 
-      text: 'Hello! How can I help you today? You can ask me about:\n\n- Nutritional information\n- Recipe ingredients', 
+      text: `Hello! How can I help you today, Roshan ${emailid}? 🤖`, 
       isBot: true 
     },
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [currentEndpoint, setCurrentEndpoint] = useState('chat'); 
 
-  const sendMessage = async (endpoint) => {
+  const sendMessage = async () => {
     try {
       setIsLoading(true);
       
-      const response = await fetch(`${BACKEND_URL}/${endpoint}`, {
+      const response = await fetch(`${BACKEND_URL}/${currentEndpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,14 +40,13 @@ export default function TabTwoScreen() {
           user_prompt: inputText,
         }),
       });
-
+      console.log(response);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
 
       const data = await response.json();
       
-      // Add user message
       const userMessage = {
         id: Date.now().toString(),
         text: inputText,
@@ -71,12 +78,17 @@ export default function TabTwoScreen() {
 
   const handleSend = async () => {
     if (inputText.trim()) {
-      const isRecipeQuery = inputText.toLowerCase().includes('recipe') || 
-                           inputText.toLowerCase().includes('ingredients') ||
-                           inputText.toLowerCase().includes('how to make');
-      
-      await sendMessage(isRecipeQuery ? 'recipe' : 'chat');
+      await sendMessage();
     }
+  };
+
+  const handleQuickAction = (endpoint) => {
+    setCurrentEndpoint(endpoint);
+    setMessages([{ 
+      id: '1', 
+      text: `You are now in ${endpoint === 'chat' ? 'Nutrition' : 'Recipe'} mode. How can I assist you?`, 
+      isBot: true 
+    }]);
   };
 
   const renderMessage = ({ item }) => (
@@ -102,12 +114,28 @@ export default function TabTwoScreen() {
   );
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText style={styles.title}>DigiSupermart Assistant</ThemedText>
+    <>
+      
+      {/* Quick Action Buttons */}
+      <ThemedView style={styles.quickActions}>
+        <TouchableOpacity
+          style={[
+            styles.quickActionButton,
+            currentEndpoint === 'chat' && styles.quickActionButtonActive
+          ]}
+          onPress={() => handleQuickAction('chat')}
+        >
+          <ThemedText style={styles.quickActionButtonText}>Nutrition Value</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.quickActionButton,
+            currentEndpoint === 'recipe' && styles.quickActionButtonActive
+          ]}
+          onPress={() => handleQuickAction('recipe')}
+        >
+          <ThemedText style={styles.quickActionButtonText}>Recipe</ThemedText>
+        </TouchableOpacity>
       </ThemedView>
       
       <ThemedView style={styles.chatContainer}>
@@ -117,6 +145,7 @@ export default function TabTwoScreen() {
           keyExtractor={item => item.id}
           style={styles.messageList}
           contentContainerStyle={styles.messageListContent}
+          onScroll={() => Keyboard.dismiss()} 
         />
       </ThemedView>
       
@@ -131,21 +160,22 @@ export default function TabTwoScreen() {
           editable={!isLoading}
           multiline
         />
-        <ThemedView 
+        <TouchableOpacity 
           style={[
             styles.sendButton, 
             (!inputText.trim() || isLoading) && styles.sendButtonDisabled
           ]}
-          onTouchEnd={!isLoading ? handleSend : undefined}
+          onPress={!isLoading ? handleSend : undefined}
+          disabled={!inputText.trim() || isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
             <ThemedText style={styles.sendButtonText}>Send</ThemedText>
           )}
-        </ThemedView>
+        </TouchableOpacity>
       </ThemedView>
-    </KeyboardAvoidingView>
+    </>
   );
 }
 
@@ -180,43 +210,77 @@ const markdownStyles = (isError) => ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f8f9fa',
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e3e3e3',
+    backgroundColor: '#fff',
+  },
+  backButton: {
+    padding: 8,
+    backgroundColor: '#7952b3',
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  backButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   title: {
-    marginTop: 50, // Adjusted margin to move the title down
     fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e3e3e3',
+  },
+  quickActionButton: {
+    backgroundColor: '#f0f2f5',
+    borderRadius: 20,
+    padding: 8,
+    paddingHorizontal: 16,
+  },
+  quickActionButtonActive: {
+    backgroundColor: 'orange',
+  },
+  quickActionButtonText: {
+    color: '#2c3e50',
     fontWeight: 'bold',
   },
   chatContainer: {
     flex: 1,
+    padding: 16,
+    width: '100%',
   },
   messageList: {
     flex: 1,
   },
   messageListContent: {
-    padding: 16,
     gap: 8,
   },
   messageContainer: {
     maxWidth: '80%',
     padding: 12,
-    borderRadius: 16,
+    borderRadius: 12,
     marginBottom: 8,
   },
   botMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: '#e3e3e3',
+    backgroundColor: '#f0f2f5',
   },
   userMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#7952b3',
   },
   errorMessage: {
     backgroundColor: '#ffebee',
@@ -229,19 +293,22 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#e3e3e3',
+    backgroundColor: '#fff',
   },
   input: {
     flex: 1,
     padding: 12,
-    borderRadius: 20,
+    borderRadius: 25,
     backgroundColor: '#f0f0f0',
     marginRight: 8,
     maxHeight: 100,
+    borderWidth: 2,
+    borderColor: '#7952b3',
   },
   sendButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#7952b3',
     padding: 12,
-    borderRadius: 20,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 60,

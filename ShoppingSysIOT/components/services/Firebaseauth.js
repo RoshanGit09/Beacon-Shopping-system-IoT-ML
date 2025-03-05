@@ -1,22 +1,40 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+// import { initializeApp } from 'firebase/app';
+// import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+// import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
-import { initializeAuth } from "firebase/auth";
+// // Firebase configuration
+// const firebaseConfig = {
+//   apiKey: "AIzaSyCJE9zxxHmo66Pr2hQYSorLAwTZIFnwKvk",
+//   authDomain: "beaconiot.firebaseapp.com",
+//   projectId: "beaconiot",
+//   storageBucket: "beaconiot.appspot.com",
+//   messagingSenderId: "136051041270",
+//   appId: "1:136051041270:web:efdf28928a593c3fe69dd7",
+//   measurementId: "G-WKK2Y3T38W"
+// };
 
-import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+// // Initialize Firebase
+// const app = initializeApp(firebaseConfig);
 
-let analytics;
-if (typeof window !== "undefined") {
-  import("firebase/analytics").then(({ getAnalytics }) => {
-    analytics = getAnalytics(app);
-  });
-}
+// // Initialize Auth
+// let auth;
+// if (typeof window !== 'undefined') {
+//   // Web environment
+//   const { getAuth } = require('firebase/auth');
+//   auth = getAuth(app);
+// } else {
+//   // React Native environment
+//   auth = initializeAuth(app, {
+//     persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+//   });
+// }
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// export { auth };
+
+import { initializeApp ,getApps} from 'firebase/app';
+import { initializeAuth, getReactNativePersistence,getAuth } from 'firebase/auth';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+
 const firebaseConfig = {
   apiKey: "AIzaSyCJE9zxxHmo66Pr2hQYSorLAwTZIFnwKvk",
   authDomain: "beaconiot.firebaseapp.com",
@@ -26,11 +44,30 @@ const firebaseConfig = {
   appId: "1:136051041270:web:efdf28928a593c3fe69dd7",
   measurementId: "G-WKK2Y3T38W"
 };
-
 let auth;
-// Initialize Firebase
+// if(getApps().length === 0){
+//   const app = initializeApp(firebaseConfig);
+//   auth = initializeAuth(app, {
+//     persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+//   });
+// }
+// else{
+//   auth = getAuth();
+
+// }
+
 const app = initializeApp(firebaseConfig);
 
 auth = initializeAuth(app);
 
-export default auth;
+// const app = initializeApp(firebaseConfig);
+
+// auth = initializeAuth(app, {
+//   persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+// });
+// auth = initializeAuth(app);
+
+export { auth };
+
+
+
