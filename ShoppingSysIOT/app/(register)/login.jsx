@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../components/services/Firebaseauth';
 import { Lock, Mail } from 'lucide-react-native';
+import { Image } from 'react-native';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -38,10 +39,10 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.formContainer}>
-      <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=3387&q=80' }}
-          
-          />
+        <Image
+          source={{ uri: 'https://img.freepik.com/free-vector/seasonal-sale-discounts-presents-purchase-visiting-boutiques-luxury-shopping-price-reduction-promotional-coupons-special-holiday-offers-vector-isolated-concept-metaphor-illustration_335657-2766.jpg' }}
+          style={{ width: '100%', height: 350, borderRadius: 10, marginBottom: 20 }}
+        />
         <Text style={styles.title}>Welcome Back</Text>
         <Text style={styles.subtitle}>Sign in to continue</Text>
 

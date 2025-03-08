@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../components/services/Firebaseauth';
 import { Lock, Mail } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'react-native';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -45,6 +46,10 @@ export default function RegisterScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.formContainer}>
+         <Image
+                  source={{ uri: 'https://img.freepik.com/premium-vector/happy-couple-shopping-with-discounts-sales_123891-155782.jpg' }}
+                  style={{ width: '100%', height: 300, borderRadius: 10, marginBottom: 20 }}
+                />
         <Text style={styles.title}>Create Account</Text>
         <Text style={styles.subtitle}>Sign up to get started</Text>
 

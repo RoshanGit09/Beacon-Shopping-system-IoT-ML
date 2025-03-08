@@ -30,7 +30,7 @@
 // }
 
 // export { auth };
-
+ 
 import { initializeApp ,getApps} from 'firebase/app';
 import { initializeAuth, getReactNativePersistence,getAuth } from 'firebase/auth';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
@@ -44,7 +44,7 @@ const firebaseConfig = {
   appId: "1:136051041270:web:efdf28928a593c3fe69dd7",
   measurementId: "G-WKK2Y3T38W"
 };
-let auth;
+let auth; 
 // if(getApps().length === 0){
 //   const app = initializeApp(firebaseConfig);
 //   auth = initializeAuth(app, {
@@ -55,19 +55,18 @@ let auth;
 //   auth = getAuth();
 
 // }
-
-const app = initializeApp(firebaseConfig);
-
-auth = initializeAuth(app);
-
 // const app = initializeApp(firebaseConfig);
 
-// auth = initializeAuth(app, {
-//   persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-// });
 // auth = initializeAuth(app);
 
+const app = initializeApp(firebaseConfig);
+ 
+auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+});  
+ 
 export { auth };
-
-
-
+ 
+  
+ 
+   

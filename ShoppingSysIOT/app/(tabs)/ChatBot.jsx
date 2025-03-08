@@ -1,19 +1,19 @@
-import { Image, StyleSheet, Platform, TextInput, FlatList, KeyboardAvoidingView, ScrollView, ActivityIndicator, TouchableOpacity, Keyboard } from 'react-native';
+import { Image, StyleSheet, Platform, TextInput, FlatList, KeyboardAvoidingView, ScrollView, ActivityIndicator, TouchableOpacity, Keyboard, ImageBackground } from 'react-native';
 import { useState, useEffect } from 'react';
 import Markdown from 'react-native-markdown-display';
 import { HelloWave } from '@/components/HelloWave';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { useLocalSearchParams  } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 
 // Replace with your actual backend URL
 const BACKEND_URL = 'http://192.168.116.123:5000';
 
-import { useNavigation ,useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 export default function ChatBot() {
   const navigation = useNavigation();
-  const route = useRoute(); 
+  const route = useRoute();
   const { emailid } = route.params || {};
   
   const [messages, setMessages] = useState([
@@ -38,9 +38,9 @@ export default function ChatBot() {
         },
         body: JSON.stringify({
           user_prompt: inputText,
+          email: emailid,
         }),
       });
-      console.log(response);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -114,8 +114,11 @@ export default function ChatBot() {
   );
 
   return (
-    <>
-      
+    <ImageBackground 
+      source={require('../../assets/images/bg3.jpg')} 
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
       {/* Quick Action Buttons */}
       <ThemedView style={styles.quickActions}>
         <TouchableOpacity
@@ -175,7 +178,7 @@ export default function ChatBot() {
           )}
         </TouchableOpacity>
       </ThemedView>
-    </>
+    </ImageBackground>
   );
 }
 
@@ -208,9 +211,13 @@ const markdownStyles = (isError) => ({
 });
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   titleContainer: {
     flexDirection: 'row',
@@ -218,7 +225,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e3e3e3',
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.8)',
   },
   backButton: {
     padding: 8,
@@ -240,7 +247,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.8)',
     borderBottomWidth: 1,
     borderBottomColor: '#e3e3e3',
   },
@@ -261,6 +268,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   messageList: {
     flex: 1,
@@ -276,14 +284,14 @@ const styles = StyleSheet.create({
   },
   botMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: '#f0f2f5',
+    backgroundColor: 'rgba(240,242,245,0.9)',
   },
   userMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#7952b3',
+    backgroundColor: 'rgba(121,82,179,0.9)',
   },
   errorMessage: {
-    backgroundColor: '#ffebee',
+    backgroundColor: 'rgba(255,235,238,0.9)',
   },
   userText: {
     color: '#fff',
@@ -293,7 +301,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#e3e3e3',
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.8)',
   },
   input: {
     flex: 1,
