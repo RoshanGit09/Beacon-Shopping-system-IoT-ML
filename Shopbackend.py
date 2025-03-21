@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify, render_template ,send_file
 from groq import Groq
 import os
@@ -16,7 +15,7 @@ import base64
 from google.generativeai import GenerativeModel
 from pymongo import MongoClient
 from flask_cors import CORS
-
+from langchain_scrapegraph.tools import SmartScraperTool
 
 # Load environment variables
 load_dotenv()
@@ -26,6 +25,8 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
 
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+SERPER_API_KEY = os.getenv('SERPER_API_KEY')
+SGAI_API_KEY = os.getenv('SGAI_API_KEY')
 
 genai.configure(api_key=GOOGLE_API_KEY)
 model = GenerativeModel('gemini-1.5-pro')
@@ -37,38 +38,23 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-PROMPT_TEMPLATE = '''You are a professional nutritionist. Given the text containing food-related information, extract and summarize the key nutritional values.  
-- Also add the Relevant Context(nutrition value i gave as input ) as it a concise information as a text with heading Nutritional value.
-Provide a well-structured response that includes:  
-- The macronutrient breakdown (carbohydrates, proteins, and fats).  
-- Key vitamins and minerals present in the food.  
-- Any dietary considerations (e.g., suitable for diabetics, high protein for muscle gain).  
-- A concise, user-friendly summary for better understanding.  
-
-Ensure that the response is factual, clear, and helpful for users looking to understand the nutritional benefits of the given text.
-'''
-PROMPT_TEMPLATE_recipie = '''You are a smart AI assistant for a digital supermarket. Given a food item or dish name, generate a structured shopping list of required ingredients with appropriate quantities that can be purchased from a store.
-
-The response should include:
-- A clear list of ingredients with shop-friendly quantities (e.g., "1 kg of flour", "500 ml of milk", "1 packet of butter").
-- Logical grouping of items (spices, vegetables, dairy, grains, etc.).
-- Consideration of standard packaging sizes available in stores.
-- Alternative options for common dietary preferences or allergies when applicable.
-
-Ensure that the list is detailed, practical, and optimized for easy shopping
-no extra message only the list should be in the final response.
-Donot add your deepthink message at last only give me the info i asked for.
-'''
+# Fetch a sample document from the collection
+def fetch_user_medical_record(user_id):
+    uri = "mongodb+srv://twinnroshan:Roseshopping@cluster0.zf5b3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    client = MongoClient(uri)
+    db = client['ShoppingSys']  
+    medical_collection = db['CustomerForms'] 
+    medical_record = medical_collection.find_one({"email": user_id})
+    if medical_record:
+        return {key: value for key, value in medical_record.items() if key != "_id"}
+    return {"health_conditions": []}
 
 # RAG Setup Functions
-
-
 def load_vector_store(persist_directory="./chroma_db_final_db"):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     vector_store = Chroma(persist_directory=persist_directory,
                           embedding_function=embeddings)
     return vector_store
-
 
 def create_qa_chain(vector_store):
     llm = ChatGoogleGenerativeAI(
@@ -90,8 +76,6 @@ def create_qa_chain(vector_store):
     )
 
 # Web Scraping Functions
-
-
 @app.route('/chat', methods=['POST'])
 @cross_origin()
 def chat():
@@ -102,7 +86,10 @@ def chat():
             return jsonify({"error": "User prompt is required."}), 400
 
         user_prompt = data['user_prompt']
-
+        emailid = data['email']
+        medical_info = fetch_user_medical_record(emailid)
+        print(medical_info)
+    
         greetings = {"hi", "hii", "hello", "hey", "hola", "namaste",'hi there'}
         if user_prompt.lower() in greetings:
             return jsonify({"main_response": "Welcome to BeaconSmart?", "related_cases": []}), 200
@@ -123,14 +110,37 @@ def chat():
         # 3. Get Groq Response
         try:
             messages = [
-                {"role": "system", "content": PROMPT_TEMPLATE},
+                {"role": "system", "content":  f'''You are a professional nutritionist. Given the text containing food-related information, extract and summarize the key nutritional values.  
+                    Your response should include:
+                    {rag_response['result']}
+                    Given a user with the following Medical details:  
+                    - Name: {medical_info['name']}    
+                    - Age: {medical_info['age']}  
+                    - Gender: {medical_info['gender']}  
+                    - Favorite Foods: {', '.join(medical_info['favorite_foods'])}  
+                    - Allergic Foods: {', '.join(medical_info['allergic_foods'])}  
+                    - Medical Conditions: {', '.join(medical_info['medical_conditions'])}  
+                    - Married: {medical_info['married']}  
+                    - Number of Children: {medical_info['children']}  
+                    
+                    provide a concise dietary recommendation.  
+
+                    Your response should include:  
+                    - The macronutrient breakdown (carbohydrates, proteins, and fats).  
+                    - Key vitamins and minerals present in the food.  
+                    - Any dietary considerations (e.g., suitable for diabetics, high protein for muscle gain).  
+                    - A concise, user-friendly summary for better understanding. 
+
+                    Ensure the response is clear, factual, and practical for individuals managing "medical_condition".  
+                    '''  
+                },
                 {"role": "user", "content": f"""
                     Question: {user_prompt}
                     Relevant Context: {rag_response['result']}
                 """}
             ]
 
-            groq_response = client.chat.completions.create(
+            groq_response =client.chat.completions.create(
                 model="llama3-70b-8192",
                 messages=messages
             )
@@ -154,12 +164,14 @@ def chat():
 def recipe():
     try:
         data = request.json
+        
         print(data)
         if not data or 'user_prompt' not in data:
             return jsonify({"error": "User prompt is required."}), 400
-
         user_prompt = data['user_prompt']
-
+        emailid = data['email']
+        medical_info = fetch_user_medical_record(emailid)
+        print(medical_info)
         greetings = {"hi", "hii", "hello", "hey", "hola", "namaste"}
         if user_prompt.lower() in greetings:
             return jsonify({"main_response": "Welcome to BeaconSmart?", "related_cases": []}), 200
@@ -168,11 +180,48 @@ def recipe():
             return jsonify({"error": "Invalid user prompt"}), 400
 
         try:
+            # Search for the recipe URL using Serper API
+            query = f"site:indiantamilrecipe.com {user_prompt}"
+            response = requests.post(
+                'https://google.serper.dev/search',
+                headers={'X-API-KEY': SERPER_API_KEY},
+                json={'q': query}
+            )
+            result = response.json()
+            recipe_url = result['organic'][0]['link']
+
+            # Scrape the recipe using SmartScraperTool
+            os.environ["SGAI_API_KEY"] = SGAI_API_KEY
+            tool = SmartScraperTool()
+            scraped_result = tool.invoke({
+                "website_url": recipe_url,
+                "user_prompt": f"Get the recipe for {user_prompt}",
+            })
+
+            # Pass the scraped result to Groq for further processing
             messages = [
-                {"role": "system", "content": PROMPT_TEMPLATE_recipie},
+                {"role": "system", "content":  f'''You are a smart AI assistant for a digital supermarket.
+                Given a user with the following personal details:  
+                - Name: {medical_info['name']}    
+                - Age: {medical_info['age']}  
+                - Gender: {medical_info['gender']}  
+                - Favorite Foods: {', '.join(medical_info['favorite_foods'])}  
+                - Allergic Foods: {', '.join(medical_info['allergic_foods'])}  
+                - Medical Conditions: {', '.join(medical_info['medical_conditions'])}  
+                - Married: {medical_info['married']}  
+                - Number of Children: {medical_info['children']}  
+                generate a structured shopping list of recommended foods suitable for this condition.  
+
+                The response should include:  
+                - A list of suitable ingredients with practical quantities (e.g., "1 kg of whole grains", "500 ml of low-fat milk").  
+                - Logical grouping of items (fruits, vegetables, proteins, grains, etc.).  
+                - Consideration of dietary restrictions and common alternatives when applicable.  
+
+                Provide only the shopping list in a clear, structured format. No additional messages.  
+                '''  },
                 {"role": "user", "content": f"""
                     Question: {user_prompt}
-                    
+                    Recipe: {scraped_result}
                 """}
             ]
 
@@ -195,9 +244,20 @@ def recipe():
         print(f"Unexpected error: {str(e)}")
         return jsonify({"error": f"Server error: {str(e)}"}), 500
     
-
-
-
+@app.route('/get_name', methods=["POST"])
+@cross_origin()
+def get_name():
+    current_user_id = request.args.get('email')
+    uri = "mongodb+srv://twinnroshan:Roseshopping@cluster0.zf5b3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    client = MongoClient(uri)
+    db = client["ShoppingSys"]
+    collection = db["CustomerForms"]
+    name = collection.find_one({"email": current_user_id}, {"name": 1, "_id": 0})
+    customer_data = {
+            "name": name
+        }
+    return jsonify(customer_data)
+    
 @app.route('/submit', methods=["POST"])
 @cross_origin()
 def submit():
@@ -245,11 +305,9 @@ def submit():
         print(f"Error: {str(e)}")
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
-
 @app.route('/')
 def home():
     return render_template('bot.html')
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0',port=5000)
