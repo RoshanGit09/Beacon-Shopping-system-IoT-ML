@@ -19,8 +19,8 @@
 // // Initialize Auth
 // let auth;
 // if (typeof window !== 'undefined') {
-//   // Web environment
-//   const { getAuth } = require('firebase/auth');
+//   // Web environment 
+//   const { getAuth } = require('firebase/auth'); 
 //   auth = getAuth(app);
 // } else {
 //   // React Native environment
@@ -49,24 +49,24 @@ let auth;
 //   const app = initializeApp(firebaseConfig);
 //   auth = initializeAuth(app, {
 //     persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-//   });
+//   }); 
 // }
-// else{
+// else{ 
 //   auth = getAuth();
-
+ 
 // }
-// const app = initializeApp(firebaseConfig);
+// const app = initializeApp(firebaseConfig); 
 
 // auth = initializeAuth(app);
-
-const app = initializeApp(firebaseConfig);
+ 
+const app = initializeApp(firebaseConfig); 
  
 auth = initializeAuth(app, {
   persistence: getReactNativePersistence(ReactNativeAsyncStorage)
 });  
- 
-export { auth };
+  
+export { auth }; 
  
   
- 
    
+         

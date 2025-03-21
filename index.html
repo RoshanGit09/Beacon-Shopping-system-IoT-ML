@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BLE ID Display</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    #id {
+      font-size: 24px;
+      color: blue;
+    }
+  </style>
+</head>
+<body>
+  <h1>BLE Advertised ID</h1>
+  <p>The advertised ID from the Arduino Nano 33 IoT will appear below:</p>
+  <p id="id">Waiting for ID...</p>
+
+  <script>
+    async function fetchID() {
+      try {
+        const response = await fetch('http://localhost:5000/get_id');
+        const data = await response.json();
+        console.log(data)
+        document.getElementById('id').textContent = data.id || "No ID received";
+      } catch (error) {
+        console.error("Error fetching ID:", error);
+        document.getElementById('id').textContent = "Error fetching ID";
+      }
+    }
+
+    // Fetch the ID every 5 seconds
+    setInterval(fetchID, 5000);
+    fetchID();
+  </script>
+</body>
+</html>

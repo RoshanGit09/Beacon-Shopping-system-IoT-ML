@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, Modal ,ImageBackground,StatusBar} from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, Modal, ImageBackground, StatusBar } from 'react-native';
 import { Header, Card, ListItem, Badge } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { getAuth, signOut } from 'firebase/auth';
 const auth = getAuth();
 import { router } from 'expo-router';
+import axios from 'axios';
 
 const Home = () => {
   const navigation = useNavigation();
@@ -17,17 +18,68 @@ const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [productLoading, setProductLoading] = useState(true);
+  const [pexelsImage, setPexelsImage] = useState(null);
+  const [productImages, setProductImages] = useState({}); 
 
-  const items = [
-    { id: 1, name: 'Product 1', image: 'https://via.placeholder.com/150' },
-    { id: 2, name: 'Product 2', image: 'https://via.placeholder.com/150' },
-    { id: 3, name: 'Product 3', image: 'https://via.placeholder.com/150' },
-    { id: 4, name: 'Product 4', image: 'https://via.placeholder.com/150' },
-    { id: 5, name: 'Product 5', image: 'https://via.placeholder.com/150' },
-    { id: 6, name: 'Product 6', image: 'https://via.placeholder.com/150' },
-    { id: 7, name: 'Product 7', image: 'https://via.placeholder.com/150' },
-    { id: 8, name: 'Product 8', image: 'https://via.placeholder.com/150' },
+  const mockProducts = [
+    { id: 1, name: 'Apple', price: 199, image: 'https://via.placeholder.com/150' },
+    { id: 2, name: 'Banana', price: 99, image: 'https://via.placeholder.com/150' },
+    { id: 3, name: 'Orange', price: 150, image: 'https://via.placeholder.com/150' },
+    { id: 4, name: 'Carrot', price: 49, image: 'https://via.placeholder.com/150' },
+    { id: 5, name: 'Tomato', price: 29, image: 'https://via.placeholder.com/150' },
+    { id: 6, name: 'Potato', price: 45, image: 'https://via.placeholder.com/150' },
   ];
+
+  const fetchLivePrices = async () => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setProducts(mockProducts);
+      setProductLoading(false);
+    } catch (err) {
+      console.error("Error fetching live prices:", err);
+      setProductLoading(false);
+    }
+  };
+
+  const fetchPexelsImage = async (query) => {
+  
+      const response = await axios.get(`https://api.pexels.com/v1/search?query=${query}&per_page=1`, {
+        headers: {
+          Authorization: 'zQpKOsVmDDxuC49sTeNNhD3IbNxU6JrELBIVhg8dPFZcMVb5pMKnN44g',
+        },
+      });
+      if (response.data.photos.length > 0) {
+        return response.data.photos[0].src.medium; 
+      }
+    
+    return null;
+  };
+
+  const fetchProductImages = async () => {
+    const images = {};
+    for (const product of mockProducts) {
+      const imageUrl = await fetchPexelsImage(product.name);
+      if (imageUrl) {
+        images[product.id] = imageUrl;
+      }
+    }
+    setProductImages(images);
+  };
+
+  useEffect(() => {
+    fetchLivePrices();
+    fetchProductImages();
+  }, []);
+
+  useEffect(() => {
+    if (selectedProduct) {
+      fetchPexelsImage(selectedProduct.value).then((imageUrl) => {
+        setPexelsImage(imageUrl);
+      });
+    }
+  }, [selectedProduct]);
 
   const handleLogout = async () => {
     try {
@@ -55,7 +107,7 @@ const Home = () => {
       setLoading(true);
       const response = await fetch(`http://192.168.116.123:8080/get_device?email=${email}`);
       const data = await response.json();
-      if(data.error){
+      if (data.error) {
         setError(data.error);
       } else {
         setDeviceData(data);
@@ -84,10 +136,10 @@ const Home = () => {
 
   const renderDeviceData = () => {
     if (!isLoggedIn) return null;
-    if (loading && !deviceData){
+    if (loading && !deviceData) {
       return (
         <View style={styles.statusContainer}>
-          <ActivityIndicator size="large" color="blue" />
+          <ActivityIndicator size="large" color="#6C63FF" />
           <Text style={styles.statusText}>Scanning for BLE devices...</Text>
         </View>
       );
@@ -111,166 +163,177 @@ const Home = () => {
 
     return (
       <Card containerStyle={styles.deviceCard}>
-      <ScrollView style={styles.container}>
-        <View>
-        <Text style={styles.productDetailsTitle}>Product Details:</Text>
-        {deviceData.product_info && Object.entries(deviceData.product_info)
-          .filter(([key]) => key !== 'error')
-          .sort(([keyA], [keyB]) => keyA === 'RACK' ? -1 : keyB === 'RACK' ? 1 : 0)
-          .map(([key, value], index) => (
-          key === 'RACK' ? (
-            <Text key={index} style={styles.sectionTitle}>{value}</Text>
-          ) : (
-            <TouchableOpacity key={index} onPress={() => {
-            setSelectedProduct({ key, value });
-            setIsModalVisible(true);
-            }}>
-            <ListItem bottomDivider containerStyle={styles.listItem}>
-              <ListItem.Content>
-              <ListItem.Title style={styles.listItemTitle}>{value}</ListItem.Title>
-              <ListItem.Subtitle style={styles.listItemSubtitle}>{key}</ListItem.Subtitle>
-              </ListItem.Content>
-              <Icon name="chevron-right" size={20} color="#6C63FF" />
-            </ListItem>
-            </TouchableOpacity>
-          )
-          ))}
-        </View>
+        <ScrollView style={styles.container}>
+          <View>
+            <Text style={styles.productDetailsTitle}>Product Details:</Text>
+            {deviceData.product_info && Object.entries(deviceData.product_info)
+              .filter(([key]) => key !== 'error')
+              .sort(([keyA], [keyB]) => keyA === 'RACK' ? -1 : keyB === 'RACK' ? 1 : 0)
+              .map(([key, value], index) => (
+                key === 'RACK' ? (
+                  <Text key={index} style={styles.sectionTitle}>{value}</Text>
+                ) : (
+                  <TouchableOpacity key={index} onPress={() => {
+                    setSelectedProduct({ key, value });
+                    setIsModalVisible(true);
+                  }}>
+                    <ListItem bottomDivider containerStyle={styles.listItem}>
+                      <ListItem.Content>
+                        <ListItem.Title style={styles.listItemTitle}>{value}</ListItem.Title>
+                        <ListItem.Subtitle style={styles.listItemSubtitle}>{key}</ListItem.Subtitle>
+                      </ListItem.Content>
+                      <Icon name="chevron-right" size={20} color="#6C63FF" />
+                    </ListItem>
+                  </TouchableOpacity>
+                )
+              ))}
+          </View>
 
-        {deviceData.analyzed_products && deviceData.analyzed_products.sorted_products && (
-        <View style={styles.analysisContainer}>
-          <Text style={styles.analysisSubtitle}>Products sorted by recommendation for you:</Text>
-          
-          {deviceData.analyzed_products.sorted_products.map((product, index) => (
-          <ListItem key={index} bottomDivider containerStyle={styles.analysisItem}>
-            <Icon
-            name={
-              product.recommendation === 'recommended' ? 'check-circle' :
-              product.recommendation === 'highly recommended' ? 'star' :
-              product.recommendation === 'consume with caution' ? 'exclamation-circle' :
-              'times-circle'
-            }
-            type="material-community"
-            color={
-              product.recommendation === 'recommended' ? 'green' :
-              product.recommendation === 'highly recommended' ? '#3498db' :
-              product.recommendation === 'consume with caution' ? '#f39c12' :
-              '#e74c3c'
-            }
-            size={24}
-            />
-            <ListItem.Content>
-            <View style={styles.productHeader}>
-              <ListItem.Title style={styles.productName}>{product.name}</ListItem.Title>
-              <Badge
-              value={product.recommendation}
-              status={
-                product.recommendation === 'recommended' ? 'success' :
-                product.recommendation === 'highly recommended' ? 'primary' :
-                product.recommendation === 'consume with caution' ? 'warning' :
-                'error'
-              }
-              />
+          {deviceData.analyzed_products && deviceData.analyzed_products.sorted_products && (
+            <View style={styles.analysisContainer}>
+              <Text style={styles.analysisSubtitle}>Products sorted by recommendation for you:</Text>
+
+              {deviceData.analyzed_products.sorted_products.map((product, index) => (
+                <ListItem key={index} bottomDivider containerStyle={styles.analysisItem}>
+                  <Icon
+                    name={
+                      product.recommendation === 'recommended' ? 'check-circle' :
+                        product.recommendation === 'highly recommended' ? 'star' :
+                          product.recommendation === 'consume with caution' ? 'exclamation-circle' :
+                            'times-circle'
+                    }
+                    type="material-community"
+                    color={
+                      product.recommendation === 'recommended' ? 'green' :
+                        product.recommendation === 'highly recommended' ? '#3498db' :
+                          product.recommendation === 'consume with caution' ? '#f39c12' :
+                            '#e74c3c'
+                    }
+                    size={24}
+                  />
+                  <ListItem.Content>
+                    <View style={styles.productHeader}>
+                      <ListItem.Title style={styles.productName}>{product.name}</ListItem.Title>
+                      <Badge
+                        value={product.recommendation}
+                        status={
+                          product.recommendation === 'recommended' ? 'success' :
+                            product.recommendation === 'highly recommended' ? 'primary' :
+                              product.recommendation === 'consume with caution' ? 'warning' :
+                                'error'
+                        }
+                      />
+                    </View>
+                    <ListItem.Subtitle style={styles.reasonText}>{product.reason}</ListItem.Subtitle>
+
+                    {product.warning && (
+                      <View style={styles.warningContainer}>
+                        <Icon name="warning" type="material" color="#f39c12" size={16} />
+                        <Text style={styles.warningText}>{product.warning}</Text>
+                      </View>
+                    )}
+                  </ListItem.Content>
+                </ListItem>
+              ))}
             </View>
-            <ListItem.Subtitle style={styles.reasonText}>{product.reason}</ListItem.Subtitle>
-            
-            {product.warning && (
-              <View style={styles.warningContainer}>
-              <Icon name="warning" type="material" color="#f39c12" size={16} />
-              <Text style={styles.warningText}>{product.warning}</Text>
-              </View>
-            )}
-            </ListItem.Content>
-          </ListItem>
-          ))}
-        </View>
-        )}
+          )}
 
-        {!deviceData.analyzed_products && (
-        <View style={styles.noAnalysisContainer}>
-          <Text style={styles.noAnalysisText}>
-          Health analysis not available. Please provide your user ID to see personalized recommendations.
-          </Text>
-        </View>
-        )}
-      </ScrollView>
+          {!deviceData.analyzed_products && (
+            <View style={styles.noAnalysisContainer}>
+              <Text style={styles.noAnalysisText}>
+                Health analysis not available. Please provide your user ID to see personalized recommendations.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
       </Card>
     );
   };
 
-  return (<ImageBackground
-    source={require('../../assets/images/bg1.jpg')}
-    style={styles.backgroundImage}
-    resizeMode="cover"
-  >
-    <View style={styles.container}>
-    <Header
-        centerComponent={{
-          text: 'BeaconSmart',
-          style: styles.headerText,
-        }}
-        containerStyle={styles.header}
-        rightComponent={
-          <TouchableOpacity onPress={handleLogout}>
-            <Icon name="sign-out" size={24} color="white" />
-          </TouchableOpacity>
-        }
-      />
-      
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-      
-      {/* Welcome Text Box */}
-      <View style={styles.box}>
-          <Text style={styles.welcomeText}>Welcome to BeaconSmart, {email}!</Text>
-        </View>
-        
-        <Text style={styles.sectionTitle}>BLE Receiver</Text>
-        {renderDeviceData()}
-        
-        {/* Products Section */}
-        <Text style={styles.subHeading}>Explore our featured products:</Text>
-        <View style={styles.productGrid}>
-          {items.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.productCard}>
-              <Image source={{ uri: item.image }} style={styles.productImage} />
-              <Text style={styles.productName}>{item.name}</Text>
+  return (
+    <ImageBackground
+      source={require('../../assets/images/bg1.jpg')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <View style={styles.container}>
+        <Header
+          centerComponent={{
+            text: 'BeaconSmart',
+            style: styles.headerText,
+          }}
+          containerStyle={styles.header}
+          rightComponent={
+            <TouchableOpacity onPress={handleLogout}>
+              <Icon name="sign-out" size={24} color="white" />
             </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-  
-      <TouchableOpacity
-        style={styles.chatbotButton}
-        onPress={() => navigation.navigate('ChatBot', { emailid: email })}
-      >
-        <Icon name="comment" size={30} color="#fff" />
-      </TouchableOpacity>
-  
-      <Modal
-        visible={isModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Card containerStyle={styles.modalCard}>
-              <Text style={styles.modalTitle}>{selectedProduct?.key}</Text>
-              <Text style={styles.modalText}>{selectedProduct?.value}</Text>
-              <Text style={styles.modalText}>Price: $10.99</Text>
-              <Text style={styles.modalText}>Expiry Date: 2023-12-31</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setIsModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </Card>
+          }
+        />
+
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {/* Welcome Text Box */}
+          <View style={styles.box}>
+            <Text style={styles.welcomeText}>Welcome to BeaconSmart, {email}!</Text>
           </View>
-        </View>
-      </Modal>
-    </View>
-  </ImageBackground>
+
+          <Text style={styles.sectionTitle}>BLE Receiver</Text>
+          {renderDeviceData()}
+
+          {/* Live Prices Section */}
+          <Text style={styles.subHeading}>Live Prices of Fruits and Vegetables:</Text>
+          {productLoading ? (
+            <ActivityIndicator size="large" color="#6C63FF" />
+          ) : (
+            <View style={styles.productGrid}>
+              {products.map((product) => (
+                <TouchableOpacity key={product.id} style={styles.productCard}>
+                  <Image
+                    source={{ uri: productImages[product.id] || product.image }} // Use Pexels image if available
+                    style={styles.productImage}
+                  />
+                  <Text style={styles.productName}>{product.name}</Text>
+                  <Text style={styles.productPrice}>₹{product.price}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+
+        <TouchableOpacity
+          style={styles.chatbotButton}
+          onPress={() => navigation.navigate('ChatBot', { emailid: email })}
+        >
+          <Icon name="comment" size={30} color="#fff" />
+        </TouchableOpacity>
+
+        <Modal
+          visible={isModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setIsModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Card containerStyle={styles.modalCard}>
+                <Text style={styles.modalTitle}>{selectedProduct?.key}</Text>
+                <Text style={styles.modalText}>{selectedProduct?.value}</Text>
+                {pexelsImage && (
+                  <Image source={{ uri: pexelsImage }} style={styles.productImage} />
+                )}
+                <Text style={styles.modalText}>Price: ₹99</Text>
+                <Text style={styles.modalText}>Expiry Date: 10/4/2025</Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setIsModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </Card>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </ImageBackground>
   );
 };
 
@@ -282,15 +345,14 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-  
   },
   header: {
     backgroundColor: '#6C63FF',
     borderBottomWidth: 0,
     elevation: 15,
     paddingBottom: 15,
-    paddingTop: StatusBar.currentHeight, 
-    borderBottomLeftRadius: 20, 
+    paddingTop: StatusBar.currentHeight,
+    borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
   headerText: {
@@ -302,14 +364,14 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#fff',
     padding: 20,
-    marginBottom:10,
+    marginBottom: 10,
     borderRadius: 15,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 10, 
+    elevation: 10,
   },
   scrollContainer: {
     padding: 20,
@@ -413,6 +475,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
+  },
+  productPrice: {
+    fontSize: 14,
+    color: '#6C63FF',
+    textAlign: 'center',
+    marginTop: 5,
   },
   chatbotButton: {
     position: 'absolute',

@@ -27,7 +27,6 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, password).then((userCredential) => {
-        // Signed in 
         const user = userCredential.user;
         
       });
