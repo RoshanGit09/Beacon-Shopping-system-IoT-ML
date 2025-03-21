@@ -70,3 +70,4 @@ for cls_id, detection in highest_accuracy_detections.items():
     output_path = os.path.join(output_folder, f"{class_names[cls_id]}_crop.jpg")
     cv2.imwrite(output_path, cropped_img)
     print(f"Cropped image saved: {output_path}")
+ 

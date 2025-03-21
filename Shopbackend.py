@@ -107,7 +107,7 @@ def chat():
             print(f"RAG system error: {str(e)}")
             return jsonify({"error": "Failed to process with RAG system"}), 500
 
-        # 3. Get Groq Response
+        # 3. Get Groq Response 
         try:
             messages = [
                 {"role": "system", "content":  f'''You are a professional nutritionist. Given the text containing food-related information, extract and summarize the key nutritional values.  

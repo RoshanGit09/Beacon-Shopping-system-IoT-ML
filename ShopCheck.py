@@ -67,7 +67,7 @@ for box, score, cls_id in zip(boxes, scores, class_ids):
 os.makedirs(CROPPED_FOLDER, exist_ok=True)
 
 
-def get_freshness_rating(image_path):
+def get_freshness_rating(image_path): 
     with open(image_path, "rb") as img_file:
         encoded_img = base64.b64encode(img_file.read()).decode('utf-8')
 
